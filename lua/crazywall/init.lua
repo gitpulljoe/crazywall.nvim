@@ -80,6 +80,7 @@ local display_floating_window = function(lines)
 	local editor_height = vim.api.nvim_get_option("lines")
 	local editor_width = vim.api.nvim_get_option("columns")
 	local win_height = math.min(math.floor(editor_height * 0.75), #lines)
+	win_height = math.max(win_height, 1)
 	local longest_line_length = (function()
 		local res = 0
 		for _, line in ipairs(lines) do
@@ -89,9 +90,9 @@ local display_floating_window = function(lines)
 	end)()
 	local win_width =
 		math.min(math.floor(editor_width * 0.75), longest_line_length)
+	win_width = math.max(win_width, 1)
 	local row = math.floor((editor_height - win_height) / 2)
 	local col = math.floor((editor_width - win_width) / 2)
-
 	local win = vim.api.nvim_open_win(buf_id, true, {
 		relative = "editor",
 		width = win_width,
@@ -105,9 +106,22 @@ local display_floating_window = function(lines)
 		return nil, "Failed to open floating window."
 	end
 	vim.api.nvim_buf_set_option(buf_id, "modifiable", false)
+	vim.api.nvim_buf_set_option(buf_id, "modified", false)
 
-	local default_bg = vim.api.nvim_get_hl(0, { name= 'Normal'}).background
-	vim.api.nvim_set_hl(0, 'NormalFloat', { bg = default_bg })
+	vim.api.nvim_create_augroup(
+		"CrazywallCloseBufferOnWindowClose",
+		{ clear = true }
+	)
+
+	vim.api.nvim_create_autocmd("WinLeave", {
+		group = "CrazywallCloseBufferOnWindowClose",
+		pattern = "*",
+		callback = function()
+			if vim.fn.bufnr("%") == buf_id then
+				vim.cmd('b#|bwipeout! ' .. buf_id)
+			end
+		end,
+	})
 
 	return buf_id
 end
@@ -266,7 +280,7 @@ end, {
 		end
 		return {}
 	end,
-	desc = "Folds a file with crazywall, skipping the confirmation window.",
+	desc = "Applies crazywall to a file, skipping the confirmation window.",
 })
 
 vim.api.nvim_create_user_command("CrazywallDry", function(opts)
@@ -308,10 +322,10 @@ vim.api.nvim_create_user_command("CrazywallDry", function(opts)
 		nil,
 		true,
 		false,
-		(output_style == "plan-only" or output_style == "both")
+		(output_style == "planonly" or output_style == "both")
 				and streams.STDOUT
 			or streams.NONE,
-		(output_style == "text-only" or output_style == "both")
+		(output_style == "textonly" or output_style == "both")
 				and streams.STDOUT
 			or streams.NONE,
 		true,
@@ -328,13 +342,29 @@ vim.api.nvim_create_user_command("CrazywallDry", function(opts)
 		return display_err(err)
 	end
 
-	_, err =
-		display_floating_window(utils.str.split_lines_to_list(tostring(plan)))
+	local text = {}
+	if output_style == "planonly" or output_style == "both" then
+		table.insert(text, "Plan (dry-run):")
+		for line in utils.str.split_lines(tostring(plan)) do
+			table.insert(text, line)
+		end
+	end
+	if output_style == "textonly" or output_style == "both" then
+		if #text ~= 0 then
+			table.insert(text, "")
+		end
+		table.insert(text, "Text (dry-run):")
+		for line in utils.str.split_lines(utils.str.join_lines(ctx.lines)) do
+			table.insert(text, line)
+		end
+	end
+
+	_, err = display_floating_window(text)
 	if err then
 		return nil, err
 	end
 
-	vim.cmd('setlocal nowrap')
+	vim.cmd("setlocal nowrap")
 end, {
 	nargs = "*",
 	complete = function(_, line)
@@ -353,7 +383,7 @@ end, {
 		end
 		return {}
 	end,
-	desc = "Folds a file with crazywall, skipping the confirmation window.",
+	desc = "Applies crazywall to a file, skipping the confirmation window.",
 })
 
 M.setup = function(opts)
@@ -369,7 +399,5 @@ M.setup = function(opts)
 	configs.DEFAULT = configs.DEFAULT or default_config
 	current_config_name = opts.default_config_name or current_config_name
 end
-
-M.foo = 42
 
 return M
