@@ -3,21 +3,19 @@ local Context = require("core.context")
 local streams = require("core.streams")
 local fold = require("core.fold")
 local utils = require("core.utils")
-local validate = require("crazywall.validate")
+local plugin_validate = require("crazywall.validate")
+local PluginContext = require("crazywall.context")
 local default_config = require("core.defaults.config")
 local M = {}
 
 local configs = {}
 local current_config_name = "DEFAULT"
 
-local output_options = { "both", "planonly", "textonly" }
-local on_unsaved_options = { "warn", "write" }
-
 ---@type number?
 local err_buf = nil
 
 ---@param path string?
----@return number?
+---@return integer?
 local find_buffer = function(path)
 	for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
 		local bufname = vim.api.nvim_buf_get_name(buf_id)
@@ -37,16 +35,30 @@ local write = function(path, text)
 		vim.fn.mkdir(dir, "p")
 	end
 
-	local file = io.open(path, "w")
-	if file then
-		local _, err = file:write(text)
-		file:close()
-		if err then
-			return err
-		end
-		return
-	end
-	return "Unable to write to " .. path
+	local buf_id = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(
+		buf_id,
+		0,
+		-1,
+		false,
+		utils.str.split_lines_to_list(text)
+	)
+	local filename = path
+	vim.api.nvim_buf_call(buf_id, function()
+		vim.cmd("write " .. filename)
+	end)
+	vim.cmd("bd! " .. buf_id)
+
+	-- local file = io.open(path, "w")
+	-- if file then
+	-- 	local _, err = file:write(text)
+	-- 	file:close()
+	-- 	if err then
+	-- 		return err
+	-- 	end
+	-- 	return
+	-- end
+	-- return "Unable to write to " .. path
 end
 
 ---@return string
@@ -58,8 +70,38 @@ local get_plan_path = function()
 	)
 end
 
+---@param plugin_ctx PluginContext
+---@param ctx Context
+---@param plan Plan
+---@return string[]
+local get_plan_and_text_lines = function(ctx, plugin_ctx, plan)
+	local lines = {}
+	if
+		plugin_ctx.output_style == "planonly"
+		or plugin_ctx.output_style == "both"
+	then
+		table.insert(lines, "Plan (dry-run):")
+		for line in utils.str.split_lines(tostring(plan)) do
+			table.insert(lines, line)
+		end
+	end
+	if
+		plugin_ctx.output_style == "textonly"
+		or plugin_ctx.output_style == "both"
+	then
+		if #lines ~= 0 then
+			table.insert(lines, "")
+		end
+		table.insert(lines, "Text (dry-run):")
+		for line in utils.str.split_lines(utils.str.join_lines(ctx.lines)) do
+			table.insert(lines, line)
+		end
+	end
+	return lines
+end
+
 ---@param lines string[]
----@return number? buf_id
+---@return integer? buf_id
 ---@return string? errmsg
 local display_floating_window = function(lines)
 	local plan_path_prefix =
@@ -118,7 +160,7 @@ local display_floating_window = function(lines)
 		pattern = "*",
 		callback = function()
 			if vim.fn.bufnr("%") == buf_id then
-				vim.cmd('b#|bwipeout! ' .. buf_id)
+				vim.cmd("b#|bwipeout! " .. buf_id)
 			end
 		end,
 	})
@@ -148,27 +190,29 @@ end
 
 ---@param buf_id integer?
 ---@param ctx Context
+---@param is_dry_run boolean
 ---@return Plan? plan
+---@return Section? root
 ---@return string? errmsg
-local do_fold = function(buf_id, ctx)
+local do_fold = function(buf_id, ctx, is_dry_run)
 	local root, err = fold.parse(ctx)
 	if not root then
-		return nil, err
+		return nil, nil, err
 	end
 
 	_, err = fold.prepare(root, ctx)
 	if err then
-		return nil, err
+		return nil, nil, err
 	end
 
 	local plan
 	plan, err = fold.execute(root, ctx, true)
 	if not plan then
-		return nil, err
+		return nil, nil, err
 	end
 
-	if ctx.is_dry_run then
-		return plan
+	if is_dry_run then
+		return plan, root
 	end
 
 	plan, err = fold.execute(root, ctx, false)
@@ -182,7 +226,7 @@ local do_fold = function(buf_id, ctx)
 		end)
 	end
 
-	return plan
+	return plan, root
 end
 
 ---@param buf_id integer?
@@ -206,18 +250,20 @@ local handle_unsaved = function(buf_id, write_on_unsaved)
 end
 
 vim.api.nvim_create_user_command("CrazywallQuick", function(opts)
-	local on_unsaved = opts.fargs[1] or "warn"
-	local err = validate.string_in_list(on_unsaved, on_unsaved_options)
-	if err then
-		vim.api.nvim_err_writeln(err)
+	local plugin_ctx, err = PluginContext:new(
+		"both",
+		opts.fargs[1] or "warn",
+		opts.fargs[2] or vim.fn.expand("%"),
+		opts.fargs[3] or vim.fn.expand("%")
+	)
+
+	if not plugin_ctx then
+		vim.api.nvim_err_writeln(assert(err))
 		return
 	end
 
-	local src_path = opts.fargs[2] or vim.fn.expand("%")
-	local dest_path = opts.fargs[3] or vim.fn.expand("%")
-
-	local buf_id = find_buffer(src_path)
-	if not handle_unsaved(buf_id, on_unsaved == "write") then
+	local buf_id = find_buffer(plugin_ctx.src_path_str)
+	if not handle_unsaved(buf_id, plugin_ctx.on_unsaved == "write") then
 		return
 	end
 
@@ -236,9 +282,9 @@ vim.api.nvim_create_user_command("CrazywallQuick", function(opts)
 	local ctx
 	ctx, err = Context:new(
 		config,
-		src_path,
-		dest_path,
-		vim.fn.readfile(src_path),
+		plugin_ctx.src_path_str,
+		plugin_ctx.dest_path_str,
+		vim.fn.readfile(plugin_ctx.src_path_str),
 		nil,
 		false,
 		true,
@@ -253,7 +299,7 @@ vim.api.nvim_create_user_command("CrazywallQuick", function(opts)
 	end
 
 	local plan
-	plan, err = do_fold(buf_id, ctx)
+	plan, _, err = do_fold(buf_id, ctx, false)
 	if not plan then
 		return display_err(err)
 	end
@@ -263,14 +309,13 @@ vim.api.nvim_create_user_command("CrazywallQuick", function(opts)
 	if err then
 		return display_err(err)
 	end
-
-	print("crazywall: Logs written to " .. plan_path)
+	-- print("crazywall: Logs written to " .. plan_path)
 end, {
 	nargs = "*",
 	complete = function(_, line)
 		local args = vim.split(line, " ")
 		if #args == 2 then
-			return on_unsaved_options
+			return PluginContext["on_unsaved_options"]
 		end
 		if #args == 3 then
 			return { vim.fn.expand("%") }
@@ -284,20 +329,20 @@ end, {
 })
 
 vim.api.nvim_create_user_command("CrazywallDry", function(opts)
-	local output_style = opts.fargs[1] or "both"
-	local on_unsaved = opts.fargs[2] or "warn"
-	local err = validate.string_in_list(on_unsaved, on_unsaved_options)
-		or validate.string_in_list(output_style, output_options)
-	if err then
-		vim.api.nvim_err_writeln(err)
+	local plugin_ctx, err = PluginContext:new(
+		opts.fargs[1] or "both",
+		opts.fargs[2] or "warn",
+		opts.fargs[3] or vim.fn.expand("%"),
+		opts.fargs[4] or vim.fn.expand("%")
+	)
+
+	if not plugin_ctx then
+		vim.api.nvim_err_writeln(assert(err))
 		return
 	end
 
-	local src_path = opts.fargs[3] or vim.fn.expand("%")
-	local dest_path = opts.fargs[4] or vim.fn.expand("%")
-
-	local buf_id = find_buffer(src_path)
-	if not handle_unsaved(buf_id, on_unsaved == "write") then
+	local buf_id = find_buffer(plugin_ctx.src_path_str)
+	if not handle_unsaved(buf_id, plugin_ctx.on_unsaved == "write") then
 		return
 	end
 
@@ -316,16 +361,22 @@ vim.api.nvim_create_user_command("CrazywallDry", function(opts)
 	local ctx
 	ctx, err = Context:new(
 		config,
-		src_path,
-		dest_path,
-		vim.fn.readfile(src_path),
+		plugin_ctx.src_path_str,
+		plugin_ctx.dest_path_str,
+		vim.fn.readfile(plugin_ctx.src_path_str),
 		nil,
 		true,
 		false,
-		(output_style == "planonly" or output_style == "both")
+		(
+			plugin_ctx.output_style == "planonly"
+			or plugin_ctx.output_style == "both"
+		)
 				and streams.STDOUT
 			or streams.NONE,
-		(output_style == "textonly" or output_style == "both")
+		(
+			plugin_ctx.output_style == "textonly"
+			or plugin_ctx.output_style == "both"
+		)
 				and streams.STDOUT
 			or streams.NONE,
 		true,
@@ -337,29 +388,14 @@ vim.api.nvim_create_user_command("CrazywallDry", function(opts)
 	end
 
 	local plan
-	plan, err = do_fold(buf_id, ctx)
-	if err then
+	plan, _, err = do_fold(buf_id, ctx, true)
+	if not plan then
 		return display_err(err)
 	end
 
-	local text = {}
-	if output_style == "planonly" or output_style == "both" then
-		table.insert(text, "Plan (dry-run):")
-		for line in utils.str.split_lines(tostring(plan)) do
-			table.insert(text, line)
-		end
-	end
-	if output_style == "textonly" or output_style == "both" then
-		if #text ~= 0 then
-			table.insert(text, "")
-		end
-		table.insert(text, "Text (dry-run):")
-		for line in utils.str.split_lines(utils.str.join_lines(ctx.lines)) do
-			table.insert(text, line)
-		end
-	end
+	local lines = get_plan_and_text_lines(ctx, plugin_ctx, plan)
 
-	_, err = display_floating_window(text)
+	_, err = display_floating_window(lines)
 	if err then
 		return nil, err
 	end
@@ -370,10 +406,132 @@ end, {
 	complete = function(_, line)
 		local args = vim.split(line, " ")
 		if #args == 2 then
-			return output_options
+			return PluginContext["output_options"]
 		end
 		if #args == 3 then
-			return on_unsaved_options
+			return PluginContext["on_unsaved_options"]
+		end
+		if #args == 4 then
+			return { vim.fn.expand("%") }
+		end
+		if #args == 5 then
+			return { vim.fn.expand("%") }
+		end
+		return {}
+	end,
+	desc = "Applies crazywall to a file, skipping the confirmation window.",
+})
+
+vim.api.nvim_create_user_command("Crazywall", function(opts)
+	local plugin_ctx, err = PluginContext:new(
+		opts.fargs[1] or "both",
+		opts.fargs[2] or "warn",
+		opts.fargs[3] or vim.fn.expand("%"),
+		opts.fargs[4] or vim.fn.expand("%")
+	)
+
+	if not plugin_ctx then
+		vim.api.nvim_err_writeln(assert(err))
+		return
+	end
+
+	local buf_id = find_buffer(plugin_ctx.src_path_str)
+	if not handle_unsaved(buf_id, plugin_ctx.on_unsaved == "write") then
+		return
+	end
+
+	if configs[current_config_name] == nil then
+		return vim.api.nvim_err_writeln(
+			"crazywall: Could not find config " .. current_config_name .. "."
+		)
+	end
+
+	local config
+	config, err = Config:new(configs[current_config_name])
+	if not config then
+		return display_err(err)
+	end
+
+	local ctx
+	ctx, err = Context:new(
+		config,
+		plugin_ctx.src_path_str,
+		plugin_ctx.dest_path_str,
+		vim.fn.readfile(plugin_ctx.src_path_str),
+		nil,
+		false,
+		false,
+		(
+			plugin_ctx.output_style == "planonly"
+			or plugin_ctx.output_style == "both"
+		)
+				and streams.STDOUT
+			or streams.NONE,
+		(
+			plugin_ctx.output_style == "textonly"
+			or plugin_ctx.output_style == "both"
+		)
+				and streams.STDOUT
+			or streams.NONE,
+		false,
+		false
+	)
+
+	if not ctx then
+		return display_err(err)
+	end
+
+	local plan, root
+	plan, root, err = do_fold(buf_id, ctx, true)
+	if not plan or not root then
+		return display_err(err)
+	end
+
+	local lines = get_plan_and_text_lines(ctx, plugin_ctx, plan)
+
+	local float_buf_id
+	float_buf_id, err = display_floating_window(lines)
+	if not float_buf_id then
+		return nil, err
+	end
+	vim.cmd("setlocal nowrap")
+	print(":w -> CONFIRM     :q -> EXIT")
+
+	vim.api.nvim_create_autocmd("BufWritePost", {
+		buffer = float_buf_id,
+		callback = function()
+			if not vim.api.nvim_buf_is_valid(float_buf_id) then
+				return
+			end
+			vim.api.nvim_buf_call(float_buf_id, function()
+				vim.cmd("write!")
+			end)
+			_, err = fold.execute(root, ctx)
+			if err then
+				return display_err(err)
+			end
+			local plan_path = get_plan_path()
+			err = write(plan_path, tostring(plan))
+			if err then
+				return display_err(err)
+			end
+			vim.cmd("bwipeout! " .. float_buf_id)
+			if buf_id then
+				vim.api.nvim_buf_call(buf_id, function()
+					vim.cmd("edit")
+				end)
+			end
+		end,
+	})
+end, {
+	nargs = "*",
+	complete = function(_, line)
+		local args = vim.split(line, " ")
+		if #args == 2 then
+			return PluginContext["output_options"]
+		end
+		if #args == 3 then
+			return PluginContext["on_unsaved_options"]
 		end
 		if #args == 4 then
 			return { vim.fn.expand("%") }
@@ -390,7 +548,7 @@ M.setup = function(opts)
 	opts = opts or {}
 	local keys = { "configs", "default_config_name" }
 	for key in pairs(opts) do
-		local err = validate.string_in_list(key, keys)
+		local err = plugin_validate.string_in_list(key, keys)
 		if err then
 			error(err)
 		end
