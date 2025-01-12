@@ -1,7 +1,7 @@
 local Path = require("core.path")
 local utils = require("core.utils")
 
----@type { [string]: PartialConfigTable }
+---@type table<string, PartialConfigTable>
 local configs = {
 
 	bible = {

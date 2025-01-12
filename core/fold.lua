@@ -14,13 +14,13 @@ M.__name = "fold"
 M.errors = {
 
 	---@param section Section?
-	---@return string
+	---@return string errmsg
 	unterminated_section = function(section)
 		return "Unterminated section: " .. (tostring(section) or "nil")
 	end,
 
 	---@param line number
-	---@return string
+	---@return string errmsg
 	inconsistent_indent = function(line)
 		return "Inconsistent indent on line " .. line
 	end,
@@ -28,7 +28,7 @@ M.errors = {
 	---@param retry_count number
 	---@param section Section?
 	---@param is_local boolean?
-	---@return string
+	---@return string errmsg
 	maximum_retry_count = function(retry_count, section, is_local)
 		return "Maximum "
 			.. (is_local and "local " or "")
@@ -39,7 +39,7 @@ M.errors = {
 	end,
 
 	---@param path Path
-	---@return string
+	---@return string errmsg
 	path_should_not_be_directory = function(path)
 		return "`config.resolve_path` returned directory-type Path ("
 			.. path:escaped()
@@ -48,14 +48,14 @@ M.errors = {
 
 	---@param path string
 	---@param section Section?
-	---@return string
+	---@return string errmsg
 	cannot_write = function(path, section)
 		return "Cannot write to path " .. path .. "\n" .. tostring(section)
 	end,
 
 	---@param command string
 	---@param err string?
-	---@return string
+	---@return string errmsg
 	command_failed = function(command, err)
 		return "Failed to execute command: "
 			.. command
@@ -64,14 +64,15 @@ M.errors = {
 	end,
 
 	---@param path string
-	---@return string
+	---@return string errmsg
 	expected_file_to_be_writable = function(path)
 		return "Expected file " .. tostring(path) .. " to be writable"
 	end,
 }
 
 ---@param ctx Context
----@return Section?, string?
+---@return Section? section
+---@return string? errmsg
 M.parse = function(ctx)
 	local curr_section, err = Section:new(
 		0,
@@ -111,8 +112,13 @@ M.parse = function(ctx)
 		line = string.sub(line, indent_chars + 1)
 
 		for note_idx, note_type in ipairs(note_schema) do
-			local prefix = note_type[2]
-			if str.starts_with(line, prefix) then
+			local open_tag = note_type[2]
+			local do_not_open_only_close = line == open_tag
+				and curr_section
+				and open_tag == curr_section:close_tag()
+			if
+				str.starts_with(line, open_tag) and not do_not_open_only_close
+			then
 				local new_section
 				new_section, err = Section:new(
 					id,
@@ -134,10 +140,14 @@ M.parse = function(ctx)
 			end
 		end
 		-- TODO(gitpushjoe): maybe still check if a suffix for another note type slipped through?
+		local do_not_close_only_open = line == curr_section:open_tag()
+			and line == curr_section:close_tag()
+			and curr_section.start_line == i
 		if
 			curr_section
-			and curr_section.type[1] ~= "ROOT"
+			and not curr_section:is_root()
 			and str.ends_with(line, curr_section:close_tag())
+			and not do_not_close_only_open
 		then
 			curr_section.end_line = i
 			curr_section = curr_section.parent
@@ -151,13 +161,14 @@ end
 
 ---@param section_root Section
 ---@param ctx Context
----@return nil, string?
+---@return nil
+---@return string? errmsg
 M.prepare = function(section_root, ctx)
 	---@type { [string]: Section }
 	local created_files = {}
 
 	local _, err = traverse.preorder(section_root, function(section)
-		if section.type[1] == "ROOT" then
+		if section:is_root() then
 			section.path = ctx.dest_path
 			return
 		end
@@ -210,7 +221,7 @@ M.prepare = function(section_root, ctx)
 	end
 
 	_, err = traverse.postorder(section_root, function(section)
-		if section.type[1] == "ROOT" then
+		if section:is_root() then
 			section.lines = ctx.lines
 			return
 		end
@@ -256,7 +267,8 @@ end
 ---@param section_root Section
 ---@param ctx Context
 ---@param is_dry_run boolean?
----@return Plan?, string?
+---@return Plan? plan
+---@return string? errmsg
 M.execute = function(section_root, ctx, is_dry_run)
 	is_dry_run = is_dry_run or false
 	local io = ctx.io
@@ -299,7 +311,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@param lines string[]
 	---@param path Path
 	---@param is_overwrite boolean?
-	---@return string?
+	---@return string? errmsg
 	local function write(handle, lines, path, is_overwrite)
 		is_overwrite = is_overwrite or false
 		created_or_modified_paths[tostring(path)] = 1
@@ -316,7 +328,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	end
 
 	---@param directory Path
-	---@return string?
+	---@return string? errmsg
 	local function mkdir(directory)
 		created_or_modified_paths[tostring(directory)] = 1
 		if not is_dry_run then
@@ -350,7 +362,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		end
 
 		while true do
-			if section.type[1] == "ROOT" then
+			if section:is_root() then
 				is_overwrite = ctx.src_path == ctx.dest_path
 				break
 			end
@@ -379,7 +391,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			full_path = tostring(section.path) or ""
 		end
 
-		if section.type[1] == "ROOT" and ctx.preserve then
+		if section:is_root() and ctx.preserve then
 			return
 		end
 

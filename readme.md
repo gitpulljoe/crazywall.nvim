@@ -88,7 +88,7 @@ Here's an example `./configs.lua` setup to use `"[!h]"` for all close tags.
 local utils = require("core.utils")
 local Path = require("core.path")
 
----@type { [string]: PartialConfigTable }
+---@type table<string, PartialConfigTable>
 local configs = {
 
   DEFAULT = {
@@ -203,6 +203,7 @@ To run crazywall on a file, you can simply run `$ cw <file>`. You can add any of
 |`--plan_stream <stream>`, `-ps <stream>`|The stream to print the crazywall plan object to. (0 for none, 1 for stdout, 2 for stderr.)  Defaults to 1.
 |`--preserve`, `-p`|Will not edit the source file.
 |`--text-stream <stream>`, `-ts <stream>`|The stream to print the updated source text to. (0 for none, 1 for stdout, 2 for stderr.)  Defaults to 1.
+|`--version`, `-v`|Prints the current version.
 |`--yes`, `-y`|Automatically confirm all prompts.
 
 ### Collision Resolution

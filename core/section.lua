@@ -55,7 +55,8 @@ Section.ROOT = "ROOT"
 ---@param children Section[]
 ---@param parent Section?
 ---@param indent string?
----@return Section?, string?
+---@return Section? section
+---@return string? errmsg
 function Section:new(
 	id,
 	type,
@@ -205,7 +206,7 @@ function Section:type_name_is(name)
 	return name == self:type_name()
 end
 
----@return string?
+---@return string
 function Section:__tostring()
 	return "Section {"
 		.. '\n\ttype = {"'

@@ -2,7 +2,7 @@
 def encode_char(char, offset):
     return chr(
         (
-            (ord(char) - ord(" ") +  offset) % 
+            (ord(char) - ord(" ") +  offset) %
                 (ord("~") - ord(" ") + 1)
         ) + (ord(" "))
     )

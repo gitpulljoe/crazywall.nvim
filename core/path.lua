@@ -35,7 +35,8 @@ end
 ---@param path string|string[]
 ---`allow_relative` IS INTENDED FOR INTERNAL USE ONLY.
 ---@param allow_relative boolean?
----@return Path?, string?
+---@return Path? path
+---@return string? errmsg
 function Path:new(path, allow_relative)
 	self = {}
 	setmetatable(self, Path)
@@ -137,7 +138,7 @@ end
 --- assert(path:pop_directory() == "baz")
 --- assert(path == Path:new("/foo/"))
 --- ```
---- @return string?
+--- @return string? errmsg
 function Path:pop_directory()
 	handle_is_void(self)
 	if #self.parts <= 2 then
@@ -200,7 +201,7 @@ end
 --- assert(path == Path:new("/foo/"))
 --- ```
 --- @param filename string
---- @return string
+--- @return string old_filename
 function Path:set_filename(filename)
 	handle_is_void(self)
 	if #self.parts < 1 then
@@ -252,7 +253,7 @@ end
 --- assert(Path:new("/foo/bar"):join("./baz") == Path:new("/foo/baz"))
 --- ```
 --- @param path string
---- @return Path?
+--- @return Path? new_path
 --- @return string? errmsg
 function Path:join(path)
 	local err = validate.types("Path:join", { { path, "string", "path" } })

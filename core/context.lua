@@ -90,7 +90,8 @@ Context.errors = {
 ---@param text_stream Stream
 ---@param preserve boolean
 ---@param ansi_enabled boolean
----@return Context?, string?
+---@return Context? ctx
+---@return string? errmsg
 function Context:new(
 	config,
 	src_path,

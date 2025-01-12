@@ -1,4 +1,4 @@
----@type { [string]: PartialConfigTable }
+---@type table<string, PartialConfigTable>
 local configs = {
 
 	refactor = {
