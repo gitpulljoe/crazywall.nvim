@@ -83,6 +83,11 @@ return function(plugin_state)
 		if err then
 			return plugin_utils.display_err(err)
 		end
+		if buf_id then
+			vim.api.nvim_buf_call(buf_id, function()
+				vim.cmd("edit")
+			end)
+		end
 	end, {
 		nargs = "*",
 		complete = function(_, line)
