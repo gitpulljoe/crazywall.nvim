@@ -1,8 +1,8 @@
 local Config = require("core.config")
 local Context = require("core.context")
-local PluginContext = require("lua.crazywall.context")
+local PluginContext = require("crazywall.context")
 local streams = require("core.streams")
-local plugin_utils = require("lua.crazywall.utils")
+local plugin_utils = require("crazywall.utils")
 local fold = require("core.fold")
 local Path = require("core.path")
 

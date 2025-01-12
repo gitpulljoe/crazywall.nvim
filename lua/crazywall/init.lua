@@ -1,15 +1,15 @@
 local plugin_validate = require("crazywall.validate")
 local validate = require("core.validate")
 local default_config = require("core.defaults.config")
-local PluginState = require("lua.crazywall.state")
+local PluginState = require("crazywall.state")
 local Config = require("core.config")
-local plugin_version = require("lua.crazywall.version")
+local plugin_version = require("crazywall.version")
 local version = require("core.version")
-local cmd_crazywall = require("lua.crazywall.commands.crazywall")
-local cmd_crazywall_dry = require("lua.crazywall.commands.crazywall_dry")
-local cmd_crazywall_quick = require("lua.crazywall.commands.crazywall_quick")
+local cmd_crazywall = require("crazywall.commands.crazywall")
+local cmd_crazywall_dry = require("crazywall.commands.crazywall_dry")
+local cmd_crazywall_quick = require("crazywall.commands.crazywall_quick")
 local cmd_crazywall_follow_ref =
-	require("lua.crazywall.commands.crazywall_follow_ref")
+	require("crazywall.commands.crazywall_follow_ref")
 
 local M = {}
 local plugin_state = PluginState:new()

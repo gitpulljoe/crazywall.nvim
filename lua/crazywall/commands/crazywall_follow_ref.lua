@@ -1,5 +1,5 @@
 local Config = require("core.config")
-local plugin_utils = require("lua.crazywall.utils")
+local plugin_utils = require("crazywall.utils")
 
 ---@param plugin_state PluginState
 return function(plugin_state)

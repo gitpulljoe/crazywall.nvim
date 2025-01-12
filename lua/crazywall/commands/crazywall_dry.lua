@@ -2,7 +2,7 @@ local PluginContext = require("crazywall.context")
 local Config = require("core.config")
 local Context = require("core.context")
 local streams = require("core.streams")
-local plugin_utils = require("lua.crazywall.utils")
+local plugin_utils = require("crazywall.utils")
 local Path = require("core.path")
 
 ---@param plugin_state PluginState

@@ -1,5 +1,5 @@
 local PluginContext = require("crazywall.context")
-local plugin_utils = require("lua.crazywall.utils")
+local plugin_utils = require("crazywall.utils")
 local Config = require("core.config")
 local Context = require("core.context")
 local streams = require("core.streams")
