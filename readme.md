@@ -52,7 +52,7 @@ use {
 
 ## Examples
 
-You can find examples in the [./core/examples/](./core/examples/) folder.
+You can find examples in the [./examples/](./examples/) folder.
 
 ## API
 
