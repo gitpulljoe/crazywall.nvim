@@ -1,6 +1,6 @@
 *NOTE: Currently only works on MacOS & Linux*
 
-# 📍crazywall.nvim 📍
+# 📍crazywall.nvim📍
 
 A Neovim wrapper of [crazywall](https://github.com/gitpushjoe/crazywall.lua).
 
