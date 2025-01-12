@@ -64,7 +64,7 @@ return function(plugin_state)
 			)
 					and streams.STDOUT
 				or streams.NONE,
-			true,
+			false,
 			false
 		)
 

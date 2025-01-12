@@ -70,6 +70,12 @@ M.add_config = function(name, config_table)
 	plugin_state.configs[name] = config_table
 end
 
+M.Path = require("core.path")
+M.utils = require("core.utils")
+M.Context = require("core.context")
+M.Section = require("core.section")
+M.Config = Config
+
 M.setup = function(opts)
 	opts = opts or {}
 	local keys = { "configs", "default_config_name", "follow_ref" }
