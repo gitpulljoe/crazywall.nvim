@@ -75,7 +75,7 @@ Config.__name = "Config"
 Config.errors = {
 
 	--- @param list table
-	--- @return string
+	--- @return string errmsg
 	missing_item_in_note_schema_list = function(list, idx)
 		return "Missing "
 			.. (#list <= 1 and "open-tag" or "close-tag")
@@ -84,7 +84,7 @@ Config.errors = {
 			.. "]."
 	end,
 
-	--- @return string
+	--- @return string errmsg
 	root_reserved = function()
 		return "Cannot use "
 			.. "ROOT"
@@ -98,7 +98,8 @@ Config.errors = {
 }
 
 --- @param config_table PartialConfigTable
---- @return Config?, string?
+--- @return Config? config
+--- @return string? errmsg
 function Config:new(config_table)
 	self = {}
 	--- @cast self Config

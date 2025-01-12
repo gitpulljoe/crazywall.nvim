@@ -1,6 +1,6 @@
 local validate = require("core.validate")
 
----@alias Equivalences { [string]: EquivalenceClass|string|nil }
+---@alias Equivalences table<string, EquivalenceClass|string|nil>
 
 ---@class (exact) EquivalenceClass
 ---@field equivalences string[]
