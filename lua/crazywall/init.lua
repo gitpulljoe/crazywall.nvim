@@ -52,6 +52,8 @@ end, {
 	end,
 })
 
+---@param name string
+---@param config_table PartialConfigTable
 M.add_config = function(name, config_table)
 	local err = validate.types(
 		'require"crazywall".add_config()',
