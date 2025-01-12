@@ -119,20 +119,20 @@ Applies crazywall to a file, with a confirmation window. Use `:w` to confirm the
 
 Equivalent of `$ cw {src_path} --out {dest_path} --plan-stream` `1`|`0` `--text-stream` `1|0`.
 
-- `output_style` 
-      - `"both"|"planonly"|"textonly"`
-      - **Default:** `"both"`
-      - Display just the plan information, or just the final text, or both.
+ * `output_style` 
+      * `"both"|"planonly"|"textonly"`
+      * **Default:** `"both"`
+      * Display just the plan information, or just the final text, or both.
 
-- `on_unsaved`
-      - `"warn"|"write"`
-      - **Default:** `"warn"`
-      - Emit a warning when the `src_path` is unsaved or automatically write the file, and then continue.
+ * `on_unsaved`
+      * `"warn"|"write"`
+      * **Default:** `"warn"`
+      * Emit a warning when the `src_path` is unsaved or automatically write the file, and then continue.
 
-- `src_path`
-      - **Default:** `vim.fn.expand("%")` (the current file)
+ * `src_path`
+      * **Default:** `vim.fn.expand("%")` (the current file)
 
-- `dest_path`
+ * `dest_path`
       - **Default:** `vim.fn.expand("%")` (the current file)
 
 #### `:CrazywallDry (output_style) (on_unsaved) (src_path) (dest_path)`
@@ -141,21 +141,21 @@ Runs crazywall in dry-run mode on a file.
 
 Equivalent to `$ cw --dry-run {src_path} --out {dest_path} --plan-stream` `1`|`0` `--text-stream` `1|0`.
 
-- `output_style` 
-- `"both"|"planonly"|"textonly"`
-- **Default:** `"both"`
-- Display just the plan information, or just the final text, or both.
+ - `output_style` 
+   - `"both"|"planonly"|"textonly"`
+   - **Default:** `"both"`
+   - Display just the plan information, or just the final text, or both.
 
-- `on_unsaved`
-- `"warn"|"write"`
-- **Default:** `"warn"`
-- Emit a warning when the `src_path` is unsaved or automatically write the file, and then continue.
+ - `on_unsaved`
+   - `"warn"|"write"`
+   - **Default:** `"warn"`
+   - Emit a warning when the `src_path` is unsaved or automatically write the file, and then continue.
 
-- `src_path`
-- **Default:** `vim.fn.expand("%")` (the current file)
+ - `src_path`
+   - **Default:** `vim.fn.expand("%")` (the current file)
 
-- `dest_path`
-- **Default:** `vim.fn.expand("%")` (the current file)
+ - `dest_path`
+   - **Default:** `vim.fn.expand("%")` (the current file)
 
 #### `:CrazywallQuick (on_unsaved) (src_path) (dest_path)`
 
@@ -163,16 +163,16 @@ Applies crazywall to a file, skipping the confirmation window.
 
 Equivalent to `$ cw {src_path} --out {dest_path} --yes`.
 
-- `on_unsaved`
-- `"warn"|"write"`
-- **Default:** `"warn"`
-- Emit a warning when the `src_path` is unsaved or automatically write the file, and then continue.
+ - `on_unsaved`
+   - `"warn"|"write"`
+   - **Default:** `"warn"`
+   - Emit a warning when the `src_path` is unsaved or automatically write the file, and then continue.
 
-- `src_path`
-- **Default:** `vim.fn.expand("%")` (the current file)
+ - `src_path`
+   - **Default:** `vim.fn.expand("%")` (the current file)
 
-- `dest_path`
-- **Default:** `vim.fn.expand("%")` (the current file)
+ - `dest_path`
+   - **Default:** `vim.fn.expand("%")` (the current file)
 
 #### `:CrazywallListConfigs`
 
