@@ -70,6 +70,9 @@ function Path:new(path, allow_relative)
 		for part in string.gmatch(path, "[^/]+") do
 			table.insert(self.parts, part)
 		end
+		if path:sub(#path, #path) == "/" then
+			table.insert(self.parts, "")
+		end
 		if #self.parts == 1 and self.parts[1] == nil then
 			self.parts = {}
 		end
@@ -270,7 +273,7 @@ function Path:join(path)
 		path = assert(tostring(copy:get_directory())) .. path:sub(4)
 	elseif path:sub(1, 1) == "." and path:sub(2, 2) == "/" then
 		path = assert(tostring(self:get_directory())) .. path:sub(3)
-	elseif path.sub(1, 1) ~= "/" then
+	elseif path:sub(1, 1) ~= "/" then
 		path = assert(tostring(self:get_directory())) .. path
 	end
 	return Path:new(path)

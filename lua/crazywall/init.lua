@@ -3,13 +3,15 @@ local validate = require("core.validate")
 local default_config = require("core.defaults.config")
 local PluginState = require("lua.crazywall.state")
 local Config = require("core.config")
+local plugin_version = require("lua.crazywall.version")
+local version = require("core.version")
 local cmd_crazywall = require("lua.crazywall.commands.crazywall")
 local cmd_crazywall_dry = require("lua.crazywall.commands.crazywall_dry")
 local cmd_crazywall_quick = require("lua.crazywall.commands.crazywall_quick")
 local cmd_crazywall_follow_ref =
 	require("lua.crazywall.commands.crazywall_follow_ref")
-local M = {}
 
+local M = {}
 local plugin_state = PluginState:new()
 cmd_crazywall(plugin_state)
 cmd_crazywall_dry(plugin_state)
@@ -27,6 +29,11 @@ vim.api.nvim_create_user_command("CrazywallListConfigs", function()
 		)
 	end
 	print()
+end, {})
+
+vim.api.nvim_create_user_command("CrazywallVersion", function()
+	print("crazywall.nvim " .. plugin_version)
+	print("crazywall.lua  " .. version)
 end, {})
 
 vim.api.nvim_create_user_command("CrazywallSetConfig", function(opts)
@@ -79,6 +86,21 @@ M.Section = require("core.section")
 M.Config = Config
 
 M.setup = function(opts)
+	vim.cmd([[highlight CrazywallPlanHeading guifg=BrightBlack]])
+	vim.cmd([[highlight CrazywallTextHeading guifg=BrightBlack]])
+	vim.cmd([[highlight CrazywallPlanCreate guifg=Green]])
+	vim.cmd([[highlight CrazywallPlanOverwrite guifg=Magenta]])
+	vim.cmd([[highlight CrazywallPlanMkdir guifg=Yellow]])
+	vim.cmd([[highlight CrazywallPlanIgnore guifg=Red]])
+	vim.cmd([[highlight CrazywallPlanRename guifg=Cyan]])
+	vim.cmd([[highlight CrazywallPlanCreateAction guifg=Green gui=bold]])
+	vim.cmd([[highlight CrazywallPlanOverwriteAction guifg=Magenta gui=bold]])
+	vim.cmd([[highlight CrazywallPlanMkdirAction guifg=Yellow gui=bold]])
+	vim.cmd([[highlight CrazywallPlanIgnoreAction guifg=Red gui=bold]])
+	vim.cmd([[highlight CrazywallPlanRenameAction guifg=Cyan gui=bold]])
+	vim.cmd([[highlight CrazywallText guifg=White]])
+	vim.cmd([[highlight CrazywallError guifg=#ff8888]])
+
 	opts = opts or {}
 	local keys = { "configs", "default_config_name", "follow_ref" }
 	for key in pairs(opts) do

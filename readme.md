@@ -221,5 +221,11 @@ CrazywallPlanOverwrite
 CrazywallPlanMkdir
 CrazywallPlanIgnore
 CrazywallPlanRename
+CrazywallPlanCreateAction
+CrazywallPlanOverwriteAction
+CrazywallPlanMkdirAction
+CrazywallPlanIgnoreAction
+CrazywallPlanRenameAction
 CrazywallText
+CrazywallError
 ```

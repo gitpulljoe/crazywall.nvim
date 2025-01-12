@@ -81,6 +81,65 @@ M.get_plan_and_text_lines = function(ctx, plugin_ctx, plan)
 	return lines
 end
 
+M.highlight_window = function(buf_id, lines)
+	local line_number = 1
+	local add_highlight = function(line, group, start_char, end_char)
+		vim.api.nvim_buf_add_highlight(
+			buf_id,
+			-1,
+			"Crazywall" .. group,
+			line - 1,
+			start_char,
+			end_char
+		)
+	end
+	_ = [[
+	       .
+	[ OVERWRITE ]
+	[    CREATE ]
+	[     MKDIR ]
+	[   REPLACE ]
+	[    IGNORE ]
+	]]
+	if utils.str.starts_with(lines[line_number], "Plan") then
+		add_highlight(line_number, "PlanHeading", 1, -1)
+		line_number = line_number + 1
+		while #(lines[line_number] or "") > 0 do
+			local char = string.sub(lines[line_number], 8, 8)
+			if char == "R" then
+				add_highlight(line_number, "PlanOverwriteAction", 0, 13)
+				add_highlight(line_number, "PlanOverwrite", 13, -1)
+			elseif char == "E" then
+				add_highlight(line_number, "PlanCreateAction", 0, 13)
+				add_highlight(line_number, "PlanCreate", 13, -1)
+			elseif char == "K" then
+				add_highlight(line_number, "PlanMkdirAction", 0, 13)
+				add_highlight(line_number, "PlanMkdir", 13, -1)
+			elseif char == "L" then
+				add_highlight(line_number, "PlanReplaceAction", 0, 13)
+				add_highlight(line_number, "PlanReplace", 13, -1)
+			elseif char == "N" then
+				add_highlight(line_number, "PlanIgnoreAction", 0, 13)
+				add_highlight(line_number, "PlanIgnore", 13, -1)
+			else
+				add_highlight(line_number, "Text", 0, -1)
+			end
+			line_number = line_number + 1
+		end
+	end
+	if not lines[line_number] then
+		return
+	end
+	line_number = line_number + 1
+	if utils.str.starts_with(lines[line_number], "Text") then
+		add_highlight(line_number, "TextHeading", 0, -1)
+	end
+	line_number = line_number + 1
+	for i = line_number, #lines do
+		add_highlight(i, "Text", 0, -1)
+	end
+end
+
 ---@param lines string[]
 ---@return integer? buf_id
 ---@return string? errmsg
@@ -145,6 +204,7 @@ M.display_floating_window = function(lines)
 			end
 		end,
 	})
+	M.highlight_window(buf_id, lines)
 
 	return buf_id
 end
@@ -167,6 +227,16 @@ M.display_err = function(err_text)
 	vim.api.nvim_buf_set_lines(err_buf, 0, -1, false, err)
 	vim.api.nvim_buf_set_option(err_buf, "bufhidden", "wipe")
 	vim.api.nvim_buf_set_option(err_buf, "modifiable", false)
+	for line = 0, #err do
+		vim.api.nvim_buf_add_highlight(
+			err_buf,
+			-1,
+			"CrazywallError",
+			line,
+			0,
+			-1
+		)
+	end
 end
 
 ---@param buf_id integer?

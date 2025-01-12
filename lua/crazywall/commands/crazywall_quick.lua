@@ -3,6 +3,7 @@ local plugin_utils = require("lua.crazywall.utils")
 local Config = require("core.config")
 local Context = require("core.context")
 local streams = require("core.streams")
+local Path = require("core.path")
 
 ---@param plugin_state PluginState
 return function(plugin_state)
@@ -43,11 +44,20 @@ return function(plugin_state)
 			return plugin_utils.display_err(err)
 		end
 
+		local src_path = tostring(
+			Path:new(vim.fn.expand("%:p:h") .. "/")
+				:join(plugin_ctx.src_path_str)
+		)
+		local dest_path = tostring(
+			Path:new(vim.fn.expand("%:p:h") .. "/")
+				:join(plugin_ctx.dest_path_str)
+		)
+
 		local ctx
 		ctx, err = Context:new(
 			config,
-			plugin_ctx.src_path_str,
-			plugin_ctx.dest_path_str,
+			src_path,
+			dest_path,
 			vim.fn.readfile(plugin_ctx.src_path_str),
 			nil,
 			false,
