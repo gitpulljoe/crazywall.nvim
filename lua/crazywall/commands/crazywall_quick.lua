@@ -44,20 +44,11 @@ return function(plugin_state)
 			return plugin_utils.display_err(err)
 		end
 
-		local src_path = tostring(
-			Path:new(vim.fn.expand("%:p:h") .. "/")
-				:join(plugin_ctx.src_path_str)
-		)
-		local dest_path = tostring(
-			Path:new(vim.fn.expand("%:p:h") .. "/")
-				:join(plugin_ctx.dest_path_str)
-		)
-
 		local ctx
 		ctx, err = Context:new(
 			config,
-			src_path,
-			dest_path,
+			plugin_ctx.src_path_str,
+			plugin_ctx.dest_path_str,
 			vim.fn.readfile(plugin_ctx.src_path_str),
 			nil,
 			false,

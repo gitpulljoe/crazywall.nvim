@@ -4,6 +4,8 @@
 
 A Neovim wrapper of [crazywall](https://github.com/gitpushjoe/crazywall.lua).
 
+![Example](https://i.imgur.com/tsRD4iM.png)
+
 Table of Contents
 -----------------
  * [Installation](#installation)
@@ -39,20 +41,59 @@ You can install crazywall.nvim with the typical plugin managers.
 ### lazy.nvim
 ```lua
 {
-   "gitpulljoe/crazywall.nvim"
+   "gitpulljoe/crazywall.nvim",
+   opts = {
+      --- add options here
+   }
 }
 ```
 
 ### packer.nvim
 ```lua
 use {
-   "gitpulljoe/crazywall.nvim"
+   "gitpulljoe/crazywall.nvim",
+   config = function ()
+      require("crazywall").setup()
+   end
 }
 ```
 
 ## Examples
 
-You can find examples in the [./examples/](./examples/) folder.
+You can find example configs in the [./examples/](./examples/) folder. Below is an example of how you could set up some keybinds for this plugin.
+
+```lua
+require("crazywall").setup({
+    configs = {
+         DEFAULT = { --- some config
+         }
+   }
+})
+vim.api.nvim_set_keymap(
+    "n",
+    "<leader>cq",
+    "<cmd>CrazywallQuick write<CR>",
+    { noremap = true, silent = true }
+)
+vim.api.nvim_set_keymap(
+    "n",
+    "<leader>cd",
+    "<cmd>CrazywallDry<CR>",
+    { noremap = true, silent = true }
+)
+vim.api.nvim_set_keymap(
+    "n",
+    "<leader>cw",
+    "<cmd>Crazywall<CR>",
+    { noremap = true, silent = true }
+)
+vim.api.nvim_set_keymap(
+    "n",
+    "<leader>cf",
+    "<cmd>CrazywallFollowRef<CR>",
+    { noremap = true, silent = true }
+)
+```
 
 ## API
 

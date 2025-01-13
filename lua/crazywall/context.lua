@@ -1,4 +1,5 @@
 local plugin_validate = require("crazywall.validate")
+local Path = require("core.path")
 
 ---@class PluginContext
 ---@field output_style "both"|"planonly"|"textonly"
@@ -15,7 +16,12 @@ PluginContext["on_unsaved_options"] = { "warn", "write" }
 ---@param dest_path_str string
 ---@return PluginContext? ctx
 ---@return string? errmsg
-function PluginContext:new(output_style, on_unsaved, src_path_str, dest_path_str)
+function PluginContext:new(
+	output_style,
+	on_unsaved,
+	src_path_str,
+	dest_path_str
+)
 	self = {}
 	setmetatable(self, PluginContext)
 	local err = plugin_validate.string_in_list(
@@ -31,8 +37,10 @@ function PluginContext:new(output_style, on_unsaved, src_path_str, dest_path_str
 	---@cast self PluginContext
 	self.output_style = output_style
 	self.on_unsaved = on_unsaved
-	self.src_path_str = src_path_str
-	self.dest_path_str = dest_path_str
+	self.src_path_str =
+		tostring(Path:new(vim.fn.expand("%:p:h") .. "/"):join(src_path_str))
+	self.dest_path_str =
+		tostring(Path:new(vim.fn.expand("%:p:h") .. "/"):join(dest_path_str))
 	return self
 end
 
