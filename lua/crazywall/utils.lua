@@ -8,11 +8,7 @@ local err_buf = nil
 
 ---@return string
 M.get_log_path = function()
-	return string.format(
-		"%s/crazywall/log-%s.txt",
-		vim.fn.stdpath("data"),
-		os.time()
-	)
+	return string.format("%s/crazywall/log-%s.txt", vim.fn.stdpath("data"), os.time())
 end
 
 ---@param path string?
@@ -37,13 +33,7 @@ M.write = function(path, text)
 	end
 
 	local buf_id = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_lines(
-		buf_id,
-		0,
-		-1,
-		false,
-		utils.str.split_lines_to_list(text)
-	)
+	vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, utils.str.split_lines_to_list(text))
 	local filename = path
 	vim.api.nvim_buf_call(buf_id, function()
 		vim.cmd("write " .. filename)
@@ -57,19 +47,13 @@ end
 ---@return string[]
 M.get_plan_and_text_lines = function(ctx, plugin_ctx, plan)
 	local lines = {}
-	if
-		plugin_ctx.output_style == "planonly"
-		or plugin_ctx.output_style == "both"
-	then
+	if plugin_ctx.output_style == "planonly" or plugin_ctx.output_style == "both" then
 		table.insert(lines, "Plan (dry-run):")
 		for line in utils.str.split_lines(tostring(plan)) do
 			table.insert(lines, line)
 		end
 	end
-	if
-		plugin_ctx.output_style == "textonly"
-		or plugin_ctx.output_style == "both"
-	then
+	if plugin_ctx.output_style == "textonly" or plugin_ctx.output_style == "both" then
 		if #lines ~= 0 then
 			table.insert(lines, "")
 		end
@@ -84,14 +68,7 @@ end
 M.highlight_window = function(buf_id, lines)
 	local line_number = 1
 	local add_highlight = function(line, group, start_char, end_char)
-		vim.api.nvim_buf_add_highlight(
-			buf_id,
-			-1,
-			"Crazywall" .. group,
-			line - 1,
-			start_char,
-			end_char
-		)
+		vim.api.nvim_buf_add_highlight(buf_id, -1, "Crazywall" .. group, line - 1, start_char, end_char)
 	end
 	_ = [[
 	       .
@@ -144,8 +121,7 @@ end
 ---@return integer? buf_id
 ---@return string? errmsg
 M.display_floating_window = function(lines)
-	local plan_path_prefix =
-		string.format("%s/crazywall/log-", vim.fn.stdpath("data"))
+	local plan_path_prefix = string.format("%s/crazywall/log-", vim.fn.stdpath("data"))
 	for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
 		local buf_name = vim.api.nvim_buf_get_name(buf_id)
 		if utils.str.starts_with(buf_name, plan_path_prefix) then
@@ -170,8 +146,7 @@ M.display_floating_window = function(lines)
 		end
 		return res
 	end)()
-	local win_width =
-		math.min(math.floor(editor_width * 0.75), longest_line_length)
+	local win_width = math.min(math.floor(editor_width * 0.75), longest_line_length)
 	win_width = math.max(win_width, 1)
 	local row = math.floor((editor_height - win_height) / 2)
 	local col = math.floor((editor_width - win_width) / 2)
@@ -190,10 +165,7 @@ M.display_floating_window = function(lines)
 	vim.api.nvim_buf_set_option(buf_id, "modifiable", false)
 	vim.api.nvim_buf_set_option(buf_id, "modified", false)
 
-	vim.api.nvim_create_augroup(
-		"CrazywallCloseBufferOnWindowClose",
-		{ clear = true }
-	)
+	vim.api.nvim_create_augroup("CrazywallCloseBufferOnWindowClose", { clear = true })
 
 	vim.api.nvim_create_autocmd("WinLeave", {
 		group = "CrazywallCloseBufferOnWindowClose",
@@ -228,14 +200,7 @@ M.display_err = function(err_text)
 	vim.api.nvim_buf_set_option(err_buf, "bufhidden", "wipe")
 	vim.api.nvim_buf_set_option(err_buf, "modifiable", false)
 	for line = 0, #err do
-		vim.api.nvim_buf_add_highlight(
-			err_buf,
-			-1,
-			"CrazywallError",
-			line,
-			0,
-			-1
-		)
+		vim.api.nvim_buf_add_highlight(err_buf, -1, "CrazywallError", line, 0, -1)
 	end
 end
 

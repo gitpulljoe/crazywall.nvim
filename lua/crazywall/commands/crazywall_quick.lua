@@ -11,8 +11,8 @@ return function(plugin_state)
 		local plugin_ctx, err = PluginContext:new(
 			"both",
 			opts.fargs[1] or "warn",
-			opts.fargs[2] or vim.fn.expand("%"),
-			opts.fargs[3] or vim.fn.expand("%")
+			opts.fargs[2] or vim.fn.expand("%:p"),
+			opts.fargs[3] or vim.fn.expand("%:p")
 		)
 
 		if not plugin_ctx then
@@ -87,10 +87,10 @@ return function(plugin_state)
 				return PluginContext["on_unsaved_options"]
 			end
 			if #args == 3 then
-				return { vim.fn.expand("%") }
+				return { vim.fn.expand("%:p") }
 			end
 			if #args == 4 then
-				return { vim.fn.expand("%") }
+				return { vim.fn.expand("%:p") }
 			end
 			return {}
 		end,
